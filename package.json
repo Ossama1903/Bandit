@@ -1,12 +1,12 @@
 {
-  "name": "bandit",
+  "name": "stryk",
   "version": "1.0.0",
   "main": "index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "tsc",
-    "start": "ts-node bin/cli.ts"
+    "start": "ts-node bin/stryk.ts"
   },
   "author": "",
   "license": "ISC",
@@ -19,7 +19,7 @@
     "typescript": "^5.7.2"
   },
   "bin": {
-    "authcraft": "./dist/cli.js"
+    "stryk": "./dist/stryk.js"
   },
   "dependencies": {
     "chalk": "^5.3.0",
