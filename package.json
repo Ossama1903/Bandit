@@ -18,5 +18,8 @@
   },
   "bin": {
     "authcraft": "./dist/cli.js"
+  },
+  "dependencies": {
+    "inquirer": "^12.2.0"
   }
 }
