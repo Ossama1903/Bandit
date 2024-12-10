@@ -2,8 +2,11 @@
   "name": "authcraft",
   "version": "1.0.0",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "tsc",
+    "start": "ts-node bin/cli.ts"
   },
   "author": "",
   "license": "ISC",
@@ -12,5 +15,8 @@
     "@types/node": "^22.10.1",
     "ts-node": "^10.9.2",
     "typescript": "^5.7.2"
+  },
+  "bin": {
+    "authcraft": "./dist/cli.js"
   }
 }
