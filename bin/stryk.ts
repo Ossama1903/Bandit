@@ -3,6 +3,40 @@ import fs from "fs";
 import path from "path";
 import inquirer from "inquirer";
 import chalk from "chalk";
+import { execSync } from "child_process";
+
+// Utility to check and install next-auth if not installed
+function ensureNextAuthInstalled() {
+  const rootDir = process.cwd();
+  const packageJsonPath = path.join(rootDir, "package.json");
+
+  if (!fs.existsSync(packageJsonPath)) {
+    console.error(
+      chalk.red("No package.json found. Are you in a Node.js project?")
+    );
+    process.exit(1);
+  }
+
+  const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf-8"));
+  const isNextAuthInstalled =
+    packageJson.dependencies?.["next-auth"] ||
+    packageJson.devDependencies?.["next-auth"];
+
+  if (isNextAuthInstalled) {
+    console.log(chalk.green("next-auth is already installed."));
+  } else {
+    console.log(chalk.yellow("next-auth is not installed. Installing now..."));
+    try {
+      execSync("npm install next-auth", { stdio: "inherit" });
+      console.log(chalk.green("next-auth has been successfully installed."));
+    } catch (error) {
+      console.error(
+        chalk.red("Failed to install next-auth. Please try manually.")
+      );
+      process.exit(1);
+    }
+  }
+}
 
 // Utility to ensure a directory exists, creating it if necessary
 function ensureDirectoryExists(directoryPath: string) {
@@ -92,6 +126,9 @@ async function promptUser() {
         );
         return;
       }
+
+      // Ensure next-auth is installed
+      ensureNextAuthInstalled();
 
       // Check for app directory
       const appDir = hasAppFolder();
