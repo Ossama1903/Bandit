@@ -21,6 +21,22 @@ const authOptions = [
   { name: chalk.green("NextAuth.js/Auth.js"), value: "nextjs" },
 ];
 
+// Function to check if the project is a Next.js project
+function isNextJsProject() {
+  try {
+    const packageJsonPath = path.join(process.cwd(), "package.json");
+    if (!fs.existsSync(packageJsonPath)) {
+      throw new Error("No package.json found in the current directory.");
+    }
+    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
+    const dependencies = packageJson.dependencies || {};
+    return "next" in dependencies;
+  } catch (error: any) {
+    console.error(chalk.red("Error checking Next.js project:"), error.message);
+    return false;
+  }
+}
+
 // Prompt the user for authentication choice
 async function promptUser() {
   try {
@@ -37,6 +53,18 @@ async function promptUser() {
 
     // Extract user choice
     const selectedAuth = answers.authChoice;
+
+    if (selectedAuth === "nextjs") {
+      // Check if it's a Next.js project
+      if (!isNextJsProject()) {
+        console.error(
+          chalk.red(
+            "❌ This script must be run in a Next.js project to set up NextAuth.js/Auth.js."
+          )
+        );
+        return;
+      }
+    }
 
     // Write the choice into a placeholder file
     const placeholderPath = path.join(process.cwd(), "auth-placeholder.txt");
