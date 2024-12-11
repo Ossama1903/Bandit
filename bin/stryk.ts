@@ -4,79 +4,69 @@ import path from "path";
 import inquirer from "inquirer";
 import chalk from "chalk";
 
+// Utility to ensure a directory exists, creating it if necessary
+function ensureDirectoryExists(directoryPath: string) {
+  if (!fs.existsSync(directoryPath)) {
+    fs.mkdirSync(directoryPath, { recursive: true });
+    console.log(chalk.green(`Created directory: ${directoryPath}`));
+  } else {
+    console.log(chalk.blue(`Directory already exists: ${directoryPath}`));
+  }
+}
+
+// Utility to ensure a file exists, creating it if necessary
+function ensureFileExists(filePath: string, content = "") {
+  if (!fs.existsSync(filePath)) {
+    fs.writeFileSync(filePath, content);
+    console.log(chalk.green(`Created file: ${filePath}`));
+  } else {
+    console.log(chalk.blue(`File already exists: ${filePath}`));
+  }
+}
+
+// Check if the current project is a Next.js project
+function isNextJsProject() {
+  const rootDir = process.cwd();
+  return (
+    fs.existsSync(path.join(rootDir, "package.json")) &&
+    JSON.parse(fs.readFileSync(path.join(rootDir, "package.json"), "utf-8"))
+      .dependencies?.next
+  );
+}
+
+// Check for the presence of the App Router folder
+function hasAppFolder() {
+  const rootDir = process.cwd();
+  const appFolderPaths = [
+    path.join(rootDir, "app"),
+    path.join(rootDir, "src", "app"),
+  ];
+  for (const appPath of appFolderPaths) {
+    if (fs.existsSync(appPath)) {
+      return appPath;
+    }
+  }
+  console.error(
+    chalk.red(
+      "App directory not found. Ensure this is a Next.js project using the App Router."
+    )
+  );
+  return null;
+}
+
 // Welcome message
 console.log(
-  chalk.blue(`
-=================================
-      Welcome to AuthCraft!
-   Your Next.js Auth Companion
-=================================
-`)
+  chalk.blue(
+    `\n=================================\n      Welcome to Stryk!\n   Your Next.js Auth Companion\n=================================\n`
+  )
 );
 
-// Define the authentication options
+// Define authentication options
 const authOptions = [
   { name: chalk.yellow("Supabase Auth"), value: "supabase" },
   { name: chalk.red("Firebase Auth"), value: "firebase" },
   { name: chalk.green("NextAuth.js/Auth.js"), value: "nextjs" },
 ];
-
-// Function to check if the project is a Next.js project
-function isNextJsProject() {
-  try {
-    const packageJsonPath = path.join(process.cwd(), "package.json");
-    if (!fs.existsSync(packageJsonPath)) {
-      throw new Error("No package.json found in the current directory.");
-    }
-    const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, "utf8"));
-    const dependencies = packageJson.dependencies || {};
-    const devDependencies = packageJson.devDependencies || {};
-    return "next" in dependencies || "next" in devDependencies;
-  } catch (error: any) {
-    console.error(chalk.red("Error checking Next.js project:"), error.message);
-    return false;
-  }
-}
-
-// Function to check for the presence of the `app` folder
-function hasAppFolder() {
-  const rootDir = process.cwd();
-  const possiblePaths = [
-    path.join(rootDir, "app"), // Default `app` folder in root
-    path.join(rootDir, "src", "app"), // `app` folder in `src`
-  ];
-
-  // Parse next.config.js for custom source directory (if available)
-  const nextConfigPath = path.join(rootDir, "next.config.js");
-  if (fs.existsSync(nextConfigPath)) {
-    try {
-      const nextConfig = require(nextConfigPath);
-      if (nextConfig.srcDir) {
-        possiblePaths.push(path.join(rootDir, nextConfig.srcDir, "app"));
-      }
-    } catch (error) {
-      console.warn(chalk.yellow("Warning: Unable to parse next.config.js."));
-    }
-  }
-
-  // Check if any of the possible paths exist and contain valid routing files
-  for (const possiblePath of possiblePaths) {
-    if (fs.existsSync(possiblePath)) {
-      const validFiles = ["page.js", "page.tsx", "layout.js", "layout.tsx"];
-      const filesInApp = fs.readdirSync(possiblePath);
-      if (filesInApp.some(file => validFiles.includes(file))) {
-        return true; // Valid `app` folder found
-      }
-    }
-  }
-
-  console.error(
-    chalk.red(
-      "No valid `app` folder found. Ensure you are using the Next.js App Router."
-    )
-  );
-  return false;
-}
 
 // Prompt the user for authentication choice
 async function promptUser() {
@@ -92,45 +82,54 @@ async function promptUser() {
       },
     ]);
 
-    // Extract user choice
     const selectedAuth = answers.authChoice;
 
     if (selectedAuth === "nextjs") {
-      // Check if it's a Next.js project
+      // Ensure it's a Next.js project
       if (!isNextJsProject()) {
         console.error(
-          chalk.red(
-            "❌ This script must be run in a Next.js project to set up NextAuth.js/Auth.js."
-          )
+          chalk.red("This does not appear to be a Next.js project.")
         );
         return;
       }
 
-      // Check if the project has an `app` folder
-      if (!hasAppFolder()) {
-        console.error(
-          chalk.red(
-            "❌ No `app` folder found. This package is only compatible with Next.js App Router."
-          )
-        );
-        return;
-      }
+      // Check for app directory
+      const appDir = hasAppFolder();
+      if (!appDir) return;
+
+      // Create or utilize the API directory
+      const apiDir = path.join(appDir, "api");
+      ensureDirectoryExists(apiDir);
+
+      // Create or utilize the auth directory
+      const authDir = path.join(apiDir, "auth");
+      ensureDirectoryExists(authDir);
+
+      // Create or utilize the [...nextauth] directory
+      const nextAuthDir = path.join(authDir, "[...nextauth]");
+      ensureDirectoryExists(nextAuthDir);
+
+      // Create or utilize the route.ts file
+      const routeFilePath = path.join(nextAuthDir, "route.ts");
+      ensureFileExists(
+        routeFilePath,
+        `import NextAuth from "next-auth";\n\nconst handler = NextAuth({\n  // Configure your NextAuth options here\n});\n\nexport { handler as GET, handler as POST };`
+      );
+    } else {
+      // Default behavior for other auth types
+      const placeholderPath = path.join(process.cwd(), "auth-placeholder.txt");
+      fs.writeFileSync(
+        placeholderPath,
+        `Authentication method selected: ${selectedAuth}`
+      );
+      console.log(
+        chalk.green("✅ Placeholder file created at: ") +
+          chalk.bold(placeholderPath)
+      );
     }
-
-    // Write the choice into a placeholder file
-    const placeholderPath = path.join(process.cwd(), "auth-placeholder.txt");
-    fs.writeFileSync(
-      placeholderPath,
-      `Authentication method selected: ${selectedAuth}`
-    );
-
-    console.log(
-      chalk.green("✅ Placeholder file created at: ") +
-        chalk.bold(placeholderPath)
-    );
   } catch (error) {
     console.error(
-      chalk.red("An error occurred while initializing AuthCraft:"),
+      chalk.red("An error occurred while initializing Stryk:"),
       error
     );
   }
