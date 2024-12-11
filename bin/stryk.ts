@@ -40,23 +40,42 @@ function isNextJsProject() {
 
 // Function to check for the presence of the `app` folder
 function hasAppFolder() {
-  try {
-    const rootAppFolder = path.join(process.cwd(), "app");
-    const srcAppFolder = path.join(process.cwd(), "src", "app");
+  const rootDir = process.cwd();
+  const possiblePaths = [
+    path.join(rootDir, "app"), // Default `app` folder in root
+    path.join(rootDir, "src", "app"), // `app` folder in `src`
+  ];
 
-    if (fs.existsSync(rootAppFolder)) {
-      return true;
-    } else if (fs.existsSync(srcAppFolder)) {
-      return true;
-    } else {
-      throw new Error(
-        "No `app` folder found in the root or `src` directory. This package is only compatible with Next.js App Router."
-      );
+  // Parse next.config.js for custom source directory (if available)
+  const nextConfigPath = path.join(rootDir, "next.config.js");
+  if (fs.existsSync(nextConfigPath)) {
+    try {
+      const nextConfig = require(nextConfigPath);
+      if (nextConfig.srcDir) {
+        possiblePaths.push(path.join(rootDir, nextConfig.srcDir, "app"));
+      }
+    } catch (error) {
+      console.warn(chalk.yellow("Warning: Unable to parse next.config.js."));
     }
-  } catch (error: any) {
-    console.error(chalk.red("Error checking `app` folder:"), error.message);
-    return false;
   }
+
+  // Check if any of the possible paths exist and contain valid routing files
+  for (const possiblePath of possiblePaths) {
+    if (fs.existsSync(possiblePath)) {
+      const validFiles = ["page.js", "page.tsx", "layout.js", "layout.tsx"];
+      const filesInApp = fs.readdirSync(possiblePath);
+      if (filesInApp.some(file => validFiles.includes(file))) {
+        return true; // Valid `app` folder found
+      }
+    }
+  }
+
+  console.error(
+    chalk.red(
+      "No valid `app` folder found. Ensure you are using the Next.js App Router."
+    )
+  );
+  return false;
 }
 
 // Prompt the user for authentication choice
