@@ -19,7 +19,7 @@
     "typescript": "^5.7.2"
   },
   "bin": {
-    "stryk": "./dist/stryk.js"
+    "stryk": "./dist/bin/stryk.js"
   },
   "dependencies": {
     "chalk": "^5.3.0",

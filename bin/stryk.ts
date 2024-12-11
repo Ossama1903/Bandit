@@ -4,6 +4,7 @@ import path from "path";
 import inquirer from "inquirer";
 import chalk from "chalk";
 import { execSync } from "child_process";
+import routeContent from "../templates/standardTemplate.js";
 
 // Utility to check and install next-auth if not installed
 function ensureNextAuthInstalled() {
@@ -148,10 +149,7 @@ async function promptUser() {
 
       // Create or utilize the route.ts file
       const routeFilePath = path.join(nextAuthDir, "route.ts");
-      ensureFileExists(
-        routeFilePath,
-        `import NextAuth from "next-auth";\n\nconst handler = NextAuth({\n  // Configure your NextAuth options here\n});\n\nexport { handler as GET, handler as POST };`
-      );
+      ensureFileExists(routeFilePath, routeContent);
     } else {
       // Default behavior for other auth types
       const placeholderPath = path.join(process.cwd(), "auth-placeholder.txt");
